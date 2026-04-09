@@ -10,7 +10,10 @@ function hasDayOneSensors(device) {
     typeof props['ep9:sHT:LocalTemperature_x100'] === 'number';
   const hasHumidity =
     typeof props['ep9:sIT600TH:LocalHumidity'] === 'number' ||
-    typeof props['ep9:sHT:LocalHumidity'] === 'number';
+    typeof props['ep9:sHT:LocalHumidity'] === 'number' ||
+    typeof props['ep9:sIT600TH:LocalHumidity_x100'] === 'number' ||
+    typeof props['ep9:sHT:LocalHumidity_x100'] === 'number' ||
+    typeof props['ep9:sIT600TH:SunnySetpoint_x100'] === 'number';
   return hasTemp || hasHumidity;
 }
 

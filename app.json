@@ -1,6 +1,6 @@
 {
   "id": "eu.edwinsmulders.salus",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "compatibility": ">=12.0.0",
   "sdk": 3,
   "platforms": [
@@ -14,10 +14,24 @@
   "icon": "/assets/icon.png",
   "images": {
     "small": "/assets/images/small.png",
-    "large": "/assets/images/large.png"
+    "large": "/assets/images/large.png",
+    "xlarge": "/assets/images/xlarge.png"
+  },
+  "contributors": {
+    "developers": [
+      {
+        "name": "Edwin Smulders"
+      },
+      {
+        "name": "Peterka35"
+      }
+    ]
+  },
+  "bugs": {
+    "url": "https://github.com/Dutchy-/salus-homey/issues"
   },
   "description": {
-    "en": "Connect Salus Quantum Thermostats from Salus Cloud."
+    "en": "Smarter comfort in every room."
   },
   "tags": {
     "en": [
@@ -44,13 +58,20 @@
         "en": "Salus Quantum Thermostat (SQ610RF/SQ610) with temperature and humidity."
       },
       "class": "thermostat",
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [
+        "cloud"
+      ],
       "capabilities": [
         "measure_temperature",
         "measure_humidity"
       ],
       "images": {
         "small": "/drivers/salus_sensor/assets/images/small.png",
-        "large": "/drivers/salus_sensor/assets/images/large.png"
+        "large": "/drivers/salus_sensor/assets/images/large.png",
+        "xlarge": "/drivers/salus_sensor/assets/images/xlarge.png"
       },
       "settings": [
         {
@@ -82,7 +103,7 @@
             "en": "Salus Account Email"
           },
           "value": "Stored securely during pairing"
-          }
+        }
       ],
       "pair": [
         {
