@@ -1,0 +1,123 @@
+{
+  "id": "eu.edwinsmulders.salus",
+  "version": "0.0.1",
+  "compatibility": ">=12.0.0",
+  "sdk": 3,
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "Salus Smart Home"
+  },
+  "category": "climate",
+  "brandColor": "#00428a",
+  "icon": "/assets/icon.png",
+  "images": {
+    "small": "/assets/images/small.png",
+    "large": "/assets/images/large.png"
+  },
+  "description": {
+    "en": "Connect Salus Quantum Thermostats from Salus Cloud."
+  },
+  "tags": {
+    "en": [
+      "salus",
+      "quantum",
+      "thermostat",
+      "climate"
+    ]
+  },
+  "support": "mailto:edwin@edwinsmulders.eu",
+  "homepage": "https://github.com/Dutchy-/salus-homey",
+  "source": "https://github.com/Dutchy-/salus-homey",
+  "author": {
+    "name": "Edwin Smulders",
+    "email": "edwin@edwinsmulders.eu"
+  },
+  "drivers": [
+    {
+      "id": "salus_sensor",
+      "name": {
+        "en": "Quantum Thermostat"
+      },
+      "description": {
+        "en": "Salus Quantum Thermostat (SQ610RF/SQ610) with temperature and humidity."
+      },
+      "class": "thermostat",
+      "capabilities": [
+        "measure_temperature",
+        "measure_humidity"
+      ],
+      "images": {
+        "small": "/drivers/salus_sensor/assets/images/small.png",
+        "large": "/drivers/salus_sensor/assets/images/large.png"
+      },
+      "settings": [
+        {
+          "id": "device_family",
+          "type": "label",
+          "label": {
+            "en": "Device Family"
+          },
+          "value": "Quantum Thermostat (SQ610RF/SQ610)"
+        },
+        {
+          "id": "device_model",
+          "type": "text",
+          "label": {
+            "en": "Detected Model"
+          }
+        },
+        {
+          "id": "device_code",
+          "type": "text",
+          "label": {
+            "en": "Salus Device Code"
+          }
+        },
+        {
+          "id": "email",
+          "type": "label",
+          "label": {
+            "en": "Salus Account Email"
+          },
+          "value": "Stored securely during pairing"
+          }
+      ],
+      "pair": [
+        {
+          "id": "login_credentials",
+          "template": "login_credentials",
+          "options": {
+            "title": {
+              "en": "Sign in to Salus Cloud"
+            },
+            "usernameLabel": {
+              "en": "Email"
+            },
+            "usernamePlaceholder": {
+              "en": "name@example.com"
+            },
+            "passwordLabel": {
+              "en": "Password"
+            },
+            "passwordPlaceholder": {
+              "en": "Password"
+            }
+          }
+        },
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
+  </head>
+  <body>
+    <fieldset class="homey-form-fieldset">
+      <legend class="homey-form-legend">Salus Cloud Login</legend>
+      <div class="homey-form-group">
+        <label class="homey-form-label" for="email">Email</label>
+        <input class="homey-form-input" id="email" type="email" />
+      </div>
+      <div class="homey-form-group">
+        <label class="homey-form-label" for="password">Password</label>
+        <input class="homey-form-input" id="password" type="password" />
+      </div>
+    </fieldset>
+
+    <script type="text/javascript">
+      Homey.setTitle('Select Salus devices');
+
+      Homey.showViewLoadingOverlay();
+      Homey.hideViewLoadingOverlay();
+
+      Homey.setNavigationClose();
+      Homey.setNavigationMenuClose();
+
+      Homey.on('list_devices', async () => {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        return Homey.emit('list_devices', { email, password });
+      });
+    </script>
+  </body>
+  </html>
