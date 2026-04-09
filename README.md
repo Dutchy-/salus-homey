@@ -21,6 +21,10 @@ This app is provided **as is**, without warranties and without any promise of fu
 - Temperature sensor updates (`measure_temperature`)
 - Humidity sensor updates (`measure_humidity`)
 
+## Planned Features
+
+- Thermostat control
+
 ## Requirements
 
 - Homey Pro (tested on Pro 2023)
@@ -50,7 +54,7 @@ homey app install
 ## Notes
 
 - Polling interval is 60 seconds.
-- Thermostat control capabilities can be added in future iterations.
+- Humidity on SQ610RF devices is read from the Salus cloud field `ep9:sIT600TH:SunnySetpoint_x100` (manually cross-referenced against the official Salus app).
 
 ## Credits
 
