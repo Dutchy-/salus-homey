@@ -1,6 +1,6 @@
 {
   "id": "eu.edwinsmulders.salus",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "compatibility": ">=12.0.0",
   "sdk": 3,
   "platforms": [
