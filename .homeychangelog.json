@@ -1,11 +1,14 @@
 {
   "0.0.1": {
-    "en": "Initial release"
+    "en": "Initial alpha release with Salus Cloud login, device pairing, and live temperature and humidity readings."
   },
   "0.0.2": {
-    "en": "Fixes for first publish"
+    "en": "First publish-quality update with metadata, image, and packaging fixes."
   },
   "0.0.3": {
-    "en": "Include new images and icons"
+    "en": "Updated app and driver artwork for the App Store and pairing experience."
+  },
+  "0.1.0": {
+    "en": "Introduced thermostat control with Homey on/off standby behavior, responsive local state updates during Salus cloud sync, and improved operating-mode reliability so idle cooling no longer flips back to heating from ambiguous cloud flags."
   }
 }

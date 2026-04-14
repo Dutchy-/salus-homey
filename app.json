@@ -1,6 +1,6 @@
 {
   "id": "eu.edwinsmulders.salus",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "compatibility": ">=12.0.0",
   "sdk": 3,
   "platforms": [
@@ -65,9 +65,24 @@
         "cloud"
       ],
       "capabilities": [
+        "onoff",
         "measure_temperature",
-        "measure_humidity"
+        "measure_humidity",
+        "target_temperature",
+        "thermostat_mode"
       ],
+      "capabilitiesOptions": {
+        "target_temperature": {
+          "min": 5,
+          "max": 45,
+          "step": 0.5
+        },
+        "thermostat_mode": {
+          "title": {
+            "en": "Operating mode"
+          }
+        }
+      },
       "images": {
         "small": "/drivers/salus_sensor/assets/images/small.png",
         "large": "/drivers/salus_sensor/assets/images/large.png",

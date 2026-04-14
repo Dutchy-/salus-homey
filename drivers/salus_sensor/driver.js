@@ -14,7 +14,10 @@ function hasDayOneSensors(device) {
     typeof props['ep9:sIT600TH:LocalHumidity_x100'] === 'number' ||
     typeof props['ep9:sHT:LocalHumidity_x100'] === 'number' ||
     typeof props['ep9:sIT600TH:SunnySetpoint_x100'] === 'number';
-  return hasTemp || hasHumidity;
+  const hasSetpoint =
+    typeof props['ep9:sIT600TH:HeatingSetpoint_x100'] === 'number' ||
+    typeof props['ep9:sHT:HeatingSetpoint_x100'] === 'number';
+  return hasTemp || hasHumidity || hasSetpoint;
 }
 
 class SalusSensorDriver extends Homey.Driver {
@@ -54,9 +57,14 @@ class SalusSensorDriver extends Homey.Driver {
           const name = device.name || device.dashboard_attributes?.name || dataId;
           if (!dataId) return null;
 
+          const data = { id: String(dataId) };
+          if (device._shadow_device_index != null && String(device._shadow_device_index) !== '') {
+            data.shadow_device_index = String(device._shadow_device_index);
+          }
+
           return {
             name,
-            data: { id: String(dataId) },
+            data,
             icon: '/icon.svg',
             settings: {
               email: credentials.email,
