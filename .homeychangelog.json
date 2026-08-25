@@ -16,5 +16,8 @@
   },
   "0.3.0": {
     "en": "Adds support for Salus smart plugs (SPE600) with energy metering and underfloor heating wiring centres (CB12RF/KL08RF) with pump, boiler and zone status. Thermostats gain battery status, heating and cooling activity with insights and flow cards, and a preset selector to follow the schedule, hold or standby. Adding more devices no longer asks for your login again."
+  },
+  "0.3.1": {
+    "en": "Improved App Store product imagery for the smart plug and wiring centre."
   }
 }
