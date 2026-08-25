@@ -12,6 +12,29 @@ class SalusCloudApp extends Homey.App {
     this.log('Salus Cloud app initialized');
   }
 
+  /**
+   * Persist auth telemetry to app settings so token handling can be verified
+   * on an installed app via the Homey developer tools (no attached console).
+   */
+  _recordAuthEvent(label, event) {
+    const expiresIso = event.tokenExpiresAt ? new Date(event.tokenExpiresAt).toISOString() : 'n/a';
+    this.log(`[auth] ${label}: ${event.type}${event.detail ? ` (${event.detail})` : ''}, token valid until ${expiresIso}`);
+
+    try {
+      const stats = this.homey.settings.get('auth_stats') || {};
+      const entry = stats[label] || { counts: {}, lastByType: {} };
+      entry.counts[event.type] = (entry.counts[event.type] || 0) + 1;
+      entry.lastByType[event.type] = new Date(event.at).toISOString();
+      entry.lastEvent = event.type;
+      entry.lastDetail = event.detail || null;
+      entry.tokenExpiresAt = expiresIso;
+      stats[label] = entry;
+      this.homey.settings.set('auth_stats', stats);
+    } catch (error) {
+      this.error('Failed persisting auth stats', error);
+    }
+  }
+
   _accountKey(email, password) {
     const normalizedEmail = String(email || '').trim().toLowerCase();
     const raw = `${normalizedEmail}|${String(password || '')}`;
@@ -23,10 +46,15 @@ class SalusCloudApp extends Homey.App {
     const key = this._accountKey(email, password);
     let account = this._accounts.get(key);
     if (!account) {
+      const label = normalizedEmail || 'unknown-account';
       account = {
         key,
-        label: normalizedEmail || 'unknown-account',
-        client: new SalusCloudClient({ email, password }),
+        label,
+        client: new SalusCloudClient({
+          email,
+          password,
+          onAuthEvent: (event) => this._recordAuthEvent(label, event),
+        }),
         devices: new Set(),
         pollTimer: null,
         inFlight: null,

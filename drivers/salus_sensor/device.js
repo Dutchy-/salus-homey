@@ -235,6 +235,14 @@ class SalusSensorDevice extends Homey.Device {
     this.client = new SalusCloudClient({
       email: this.getSetting('email'),
       password: this.getSetting('password'),
+      onAuthEvent: (event) => {
+        const label = `${String(this.getSetting('email') || '').trim().toLowerCase()} [${this.getName()}]`;
+        if (typeof this.homey.app?._recordAuthEvent === 'function') {
+          this.homey.app._recordAuthEvent(label, event);
+        } else {
+          this.log(`[auth] ${event.type}`);
+        }
+      },
     });
     this._targetTempOptsKey = null;
     this._pendingTargetTemperature = null;
