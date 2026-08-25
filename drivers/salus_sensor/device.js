@@ -462,21 +462,23 @@ class SalusSensorDevice extends Homey.Device {
           await this.setCapabilityValue('onoff', onoff);
         }
       }
-      if (thermostatMode && this.hasCapability('thermostat_mode')) {
+      if (this.hasCapability('thermostat_mode')) {
         let effectiveMode = thermostatMode;
-        // Only fall back to remembered mode when current mapping is unavailable.
+        // Fall back to the remembered mode when cloud flags are ambiguous (on, idle, no mapping).
         if (!effectiveMode && onoff && runningState === 0 && this._lastActiveThermostatMode) {
           effectiveMode = this._lastActiveThermostatMode;
         }
 
-        this._lastThermostatMode = effectiveMode;
-        if (effectiveMode === 'heat' || effectiveMode === 'cool') {
-          this._lastActiveThermostatMode = effectiveMode;
+        if (effectiveMode) {
+          this._lastThermostatMode = effectiveMode;
+          if (effectiveMode === 'heat' || effectiveMode === 'cool') {
+            this._lastActiveThermostatMode = effectiveMode;
+          }
+          await this.setCapabilityValue('thermostat_mode', effectiveMode);
         }
         if (strongActiveMode) {
           this._lastActiveThermostatMode = strongActiveMode;
         }
-        await this.setCapabilityValue('thermostat_mode', effectiveMode);
       }
 
       await this.setAvailable();
