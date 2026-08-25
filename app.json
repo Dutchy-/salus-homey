@@ -1,6 +1,6 @@
 {
   "id": "eu.edwinsmulders.salus",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "compatibility": ">=12.0.0",
   "sdk": 3,
   "platforms": [
@@ -38,7 +38,11 @@
       "salus",
       "quantum",
       "thermostat",
-      "climate"
+      "climate",
+      "smart plug",
+      "underfloor heating",
+      "wiring centre",
+      "it600"
     ]
   },
   "support": "mailto:edwin@edwinsmulders.eu",
