@@ -10,5 +10,8 @@
   },
   "0.1.0": {
     "en": "Introduced thermostat control with Homey on/off standby behavior, responsive local state updates during Salus cloud sync, and improved operating-mode reliability so idle cooling no longer flips back to heating from ambiguous cloud flags."
+  },
+  "0.2.0": {
+    "en": "More reliable Salus cloud connection with automatic session refresh and recovery. Account credentials moved to secure storage, with a repair option to update a changed password without re-pairing. Official app and device artwork."
   }
 }
