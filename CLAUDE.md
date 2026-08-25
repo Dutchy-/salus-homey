@@ -4,7 +4,7 @@ Guidance for AI assistants (and humans) working in this repository.
 
 ## Project overview
 
-Homey Pro app (SDK 3) integrating Salus Quantum thermostats (SQ610/SQ610RF) through the Salus EU cloud. App ID `eu.edwinsmulders.salus`, published to the Homey App Store as "Salus Smart Home".
+Homey Pro app (SDK 3) integrating Salus iT600 devices — Quantum thermostats (SQ610/SQ610RF), smart plugs (SPE600/SP600) and underfloor heating wiring centres (CB12RF/KL08RF) — through the Salus EU cloud. App ID `eu.edwinsmulders.salus`, published to the Homey App Store as "Salus Smart Home".
 
 **Caution**: several shadow-property mappings and mode handlings look wrong but are reverse-engineered device behavior, cross-referenced against the official Salus app. Read the code comments before "fixing" anything in that area.
 

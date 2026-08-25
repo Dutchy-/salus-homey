@@ -1,6 +1,6 @@
 # Salus Smart Home (Homey App)
 
-Homey app for Salus Quantum thermostats via Salus Cloud.
+Homey app for Salus iT600 devices (thermostats, smart plugs, wiring centres) via Salus Cloud.
 
 ## Status
 
@@ -13,16 +13,35 @@ This app is provided **as is**, without warranties and without any promise of fu
 ## Supported Devices
 
 - Salus Quantum Thermostat family (`SQ610RF` / `SQ610`)
+- Salus Smart Plug (`SPE600` / `SP600`)
+- Salus underfloor heating wiring centres (`CB12RF` / `KL08RF`)
 
 ## Current Features
 
-- Login with Salus cloud account
-- Device discovery and pairing in Homey
-- Temperature sensor updates (`measure_temperature`)
-- Humidity sensor updates (`measure_humidity`)
-- Target temperature control (`target_temperature`)
-- On/off control with standby behavior (`onoff`)
+Thermostats:
+
+- Temperature and humidity readings
+- Target temperature control
+- On/off control with standby behavior, resuming the previous mode
+- Preset selector: follow schedule, permanent hold or standby, plus a "Resume schedule" flow action
+- Heating/cooling activity indicators with insights and flow cards
+- Battery level and low-battery alarm (battery models)
 - Operating mode display (`thermostat_mode`, read-only)
+
+Smart plugs:
+
+- On/off control
+- Power, cumulative energy and mains voltage metering (metering models)
+
+Wiring centres:
+
+- Pump and boiler output status with insights and flow cards
+- Per-zone open/closed status for bound zones, with flow triggers
+
+General:
+
+- Login with Salus cloud account; adding more devices reuses stored credentials
+- Repair flow to update a changed Salus password without re-pairing
 
 ## Requirements
 
