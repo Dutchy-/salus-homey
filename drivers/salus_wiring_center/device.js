@@ -107,7 +107,17 @@ class SalusWiringCenterDevice extends SalusDeviceBase {
     }
     if (!Object.keys(values).length) return;
 
-    const previous = this._lastDewValues || {};
+    // Seed the comparison from the persisted record so app restarts do not
+    // re-append an unchanged baseline.
+    let previous = this._lastDewValues;
+    if (!previous) {
+      try {
+        previous = (this.homey.settings.get('dew_debug') || {})[this.getName()]?.current;
+      } catch (error) {
+        previous = null;
+      }
+    }
+    previous = previous || {};
     const changed = DEW_DEBUG_PROPS.some((key) => values[key] !== previous[key]);
     this._lastDewValues = values;
     if (!changed) return;
