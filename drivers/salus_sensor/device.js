@@ -85,6 +85,16 @@ function readHumidity(device) {
   return null;
 }
 
+function readBatteryPercentage(device) {
+  const props = device?._shadow_properties || {};
+  const level = props['ep9:sIT600TH:BatteryLevel'] ?? props['ep9:sHT:BatteryLevel'];
+  if (typeof level === 'number') {
+    // BatteryLevel is the Zigbee 0-5 scale (5 = full).
+    return Math.max(0, Math.min(100, level * 20));
+  }
+  return null;
+}
+
 function readSystemModeRaw(device) {
   const props = device?._shadow_properties || {};
   return props['ep9:sIT600TH:SystemMode'] ?? props['ep9:sHT:SystemMode'] ?? null;
@@ -465,6 +475,20 @@ class SalusSensorDevice extends Homey.Device {
       }
       if (typeof humidity === 'number') {
         await this.setCapabilityValue('measure_humidity', humidity);
+      }
+
+      // Battery only exists on battery-powered models (SQ610RF); wired SQ610
+      // never reports BatteryLevel, so the capability is added when first seen.
+      const batteryPercentage = readBatteryPercentage(own);
+      if (typeof batteryPercentage === 'number') {
+        if (!this.hasCapability('measure_battery')) {
+          await this.addCapability('measure_battery');
+        }
+        if (!this.hasCapability('alarm_battery')) {
+          await this.addCapability('alarm_battery');
+        }
+        await this.setCapabilityValue('measure_battery', batteryPercentage);
+        await this.setCapabilityValue('alarm_battery', batteryPercentage <= 20);
       }
 
       await this.applyTargetTemperatureOptionsFromShadow(own._shadow_properties || {}, targetTemperature);

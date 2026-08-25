@@ -71,6 +71,9 @@
         "target_temperature",
         "thermostat_mode"
       ],
+      "energy": {
+        "batteries": ["INTERNAL"]
+      },
       "capabilitiesOptions": {
         "target_temperature": {
           "min": 5,
