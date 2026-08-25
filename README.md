@@ -20,10 +20,9 @@ This app is provided **as is**, without warranties and without any promise of fu
 - Device discovery and pairing in Homey
 - Temperature sensor updates (`measure_temperature`)
 - Humidity sensor updates (`measure_humidity`)
-
-## Planned Features
-
-- Thermostat control
+- Target temperature control (`target_temperature`)
+- On/off control with standby behavior (`onoff`)
+- Operating mode display (`thermostat_mode`, read-only)
 
 ## Requirements
 
@@ -59,5 +58,5 @@ homey app install
 ## Credits
 
 - This app was built using the Home Assistant integration/module [Peterka35/salus-it600-cloud](https://github.com/Peterka35/salus-it600-cloud) as the reference for cloud API behavior.
-- Development of this app was fully assisted by Cursor AI.
+- Development of this app was fully AI-assisted (Cursor, Claude Code).
 
