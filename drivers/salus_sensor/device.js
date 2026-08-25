@@ -1,7 +1,6 @@
 'use strict';
 
-const Homey = require('homey');
-const SalusCloudClient = require('../../lib/salus-cloud-client');
+const SalusDeviceBase = require('../../lib/salus-device-base');
 
 const TARGET_CONFIRM_TIMEOUT_MS = 45 * 1000;
 const ONOFF_CONFIRM_TIMEOUT_MS = 30 * 1000;
@@ -19,14 +18,6 @@ const TARGET_SENTINEL_EPSILON = 0.2;
 const HOLD_MODE_TYPES = { schedule: 0, hold: 2, standby: 7 };
 const HOLD_MODE_CONFIRM_TIMEOUT_MS = 30 * 1000;
 const LAST_ACTIVE_HOLD_MODE_STORE_KEY = 'last_active_hold_mode';
-
-function deviceMatchesHomeyData(device, pairedId) {
-  const p = String(pairedId);
-  const candidates = [device.id, device.device_id, device.device_code]
-    .filter((v) => v != null && v !== '')
-    .map(String);
-  return candidates.includes(p);
-}
 
 function readTemperature(device) {
   const props = device?._shadow_properties || {};
@@ -170,68 +161,7 @@ function resolveStandbySentinelForMode(mode) {
   return mode === 'cool' ? 40.5 : 5;
 }
 
-class SalusSensorDevice extends Homey.Device {
-  /**
-   * Credentials live in the device store. Devices paired before this existed
-   * kept them in settings; migrate once, then purge the plaintext password.
-   */
-  async getCredentials() {
-    let email = this.getStoreValue('salus_email');
-    let password = this.getStoreValue('salus_password');
-
-    if (!password) {
-      const legacyEmail = this.getSetting('email');
-      const legacyPassword = this.getSetting('password');
-      if (legacyPassword) {
-        await this.setStoreValue('salus_email', legacyEmail);
-        await this.setStoreValue('salus_password', legacyPassword);
-        email = legacyEmail;
-        password = legacyPassword;
-      }
-    }
-
-    // Purge plaintext whenever a legacy password lingers in settings and the
-    // store copy is confirmed readable — retried every init until it succeeds.
-    if (this.getSetting('password') && this.getStoreValue('salus_password')) {
-      await this.setSettings({ password: '' }).catch((error) => {
-        this.error('Could not blank legacy password setting', error);
-      });
-    }
-
-    return { email, password };
-  }
-
-  _createClient(email, password) {
-    return new SalusCloudClient({
-      email,
-      password,
-      onAuthEvent: (event) => {
-        const label = `${String(email || '').trim().toLowerCase()} [${this.getName()}]`;
-        if (typeof this.homey.app?._recordAuthEvent === 'function') {
-          this.homey.app._recordAuthEvent(label, event);
-        } else {
-          this.log(`[auth] ${event.type}`);
-        }
-      },
-    });
-  }
-
-  /** Called from the repair flow after the new credentials validated against Salus cloud. */
-  async applyNewCredentials(email, password) {
-    await this.setStoreValue('salus_email', email);
-    await this.setStoreValue('salus_password', password);
-
-    if (typeof this.homey.app?.unregisterDeviceFromSharedPolling === 'function') {
-      this.homey.app.unregisterDeviceFromSharedPolling(this);
-    }
-    this.client = this._createClient(email, password);
-    if (typeof this.homey.app?.registerDeviceForSharedPolling === 'function') {
-      await this.homey.app.registerDeviceForSharedPolling(this, email, password);
-    }
-    await this.setAvailable().catch(() => {});
-    await this.refreshSoon(0);
-  }
-
+class SalusSensorDevice extends SalusDeviceBase {
   clampTargetToKnownRange(value) {
     if (typeof value !== 'number' || !Number.isFinite(value)) return null;
     const min = typeof this._minTargetC === 'number' ? this._minTargetC : TARGET_TEMPERATURE_OPTIONS.min;
@@ -252,16 +182,6 @@ class SalusSensorDevice extends Homey.Device {
       return this.clampTargetToKnownRange(remembered);
     }
     return null;
-  }
-
-  async refreshSoon(delayMs = 4000) {
-    if (typeof this.homey.app?.requestDeviceRefresh === 'function') {
-      await this.homey.app.requestDeviceRefresh(this, delayMs);
-      return;
-    }
-    this.homey.setTimeout(() => {
-      this.syncFromCloud().catch(this.error);
-    }, delayMs);
   }
 
   /** Remember the last non-standby mode so the onoff toggle can restore it. */
@@ -455,18 +375,7 @@ class SalusSensorDevice extends Homey.Device {
       await this.applyHoldMode(value);
     });
 
-    if (typeof this.homey.app?.registerDeviceForSharedPolling === 'function') {
-      await this.homey.app.registerDeviceForSharedPolling(this, email, password);
-      await this.refreshSoon(0);
-    } else {
-      await this.syncFromCloud();
-    }
-  }
-
-  async onDeleted() {
-    if (typeof this.homey.app?.unregisterDeviceFromSharedPolling === 'function') {
-      this.homey.app.unregisterDeviceFromSharedPolling(this);
-    }
+    await this.startPolling(email, password);
   }
 
   /**
@@ -526,164 +435,141 @@ class SalusSensorDevice extends Homey.Device {
     }
   }
 
-  async syncFromCloud() {
-    try {
-      const allDevices = await this.client.getAllDevices();
-      await this.syncFromSnapshot(allDevices);
-    } catch (error) {
-      this.error('Failed syncing Salus sensor', error);
-      await this.setUnavailable(error.message);
+  async applyCloudSnapshot(own) {
+    const temperature = readTemperature(own);
+    const targetTemperature = readTargetTemperature(own);
+    const humidity = readHumidity(own);
+    const thermostatMode = readThermostatMode(own);
+    const onoff = readOnOff(own);
+    const runningState = readRunningState(own);
+    const strongActiveMode = readStrongActiveMode(own);
+
+    if (typeof temperature === 'number') {
+      await this.setCapabilityValue('measure_temperature', temperature);
     }
-  }
+    if (typeof humidity === 'number') {
+      await this.setCapabilityValue('measure_humidity', humidity);
+    }
 
-  async syncFromSnapshot(allDevices) {
-    try {
-      const own = allDevices.find((device) => deviceMatchesHomeyData(device, this.getData().id));
-
-      if (!own) {
-        throw new Error('Cloud device not found for paired Homey device');
+    // Battery only exists on battery-powered models (SQ610RF); wired SQ610
+    // never reports BatteryLevel, so the capability is added when first seen.
+    const batteryPercentage = readBatteryPercentage(own);
+    if (typeof batteryPercentage === 'number') {
+      if (!this.hasCapability('measure_battery')) {
+        await this.addCapability('measure_battery');
       }
-
-      const temperature = readTemperature(own);
-      const targetTemperature = readTargetTemperature(own);
-      const humidity = readHumidity(own);
-      const thermostatMode = readThermostatMode(own);
-      const onoff = readOnOff(own);
-      const runningState = readRunningState(own);
-      const strongActiveMode = readStrongActiveMode(own);
-
-      if (typeof temperature === 'number') {
-        await this.setCapabilityValue('measure_temperature', temperature);
+      if (!this.hasCapability('alarm_battery')) {
+        await this.addCapability('alarm_battery');
       }
-      if (typeof humidity === 'number') {
-        await this.setCapabilityValue('measure_humidity', humidity);
-      }
+      await this.setCapabilityValue('measure_battery', batteryPercentage);
+      await this.setCapabilityValue('alarm_battery', batteryPercentage <= 20);
+    }
 
-      // Battery only exists on battery-powered models (SQ610RF); wired SQ610
-      // never reports BatteryLevel, so the capability is added when first seen.
-      const batteryPercentage = readBatteryPercentage(own);
-      if (typeof batteryPercentage === 'number') {
-        if (!this.hasCapability('measure_battery')) {
-          await this.addCapability('measure_battery');
-        }
-        if (!this.hasCapability('alarm_battery')) {
-          await this.addCapability('alarm_battery');
-        }
-        await this.setCapabilityValue('measure_battery', batteryPercentage);
-        await this.setCapabilityValue('alarm_battery', batteryPercentage <= 20);
+    const holdMode = readHoldMode(own);
+    if (holdMode) {
+      if (!this.hasCapability('salus_hold_mode')) {
+        await this.addCapability('salus_hold_mode');
       }
-
-      const holdMode = readHoldMode(own);
-      if (holdMode) {
-        if (!this.hasCapability('salus_hold_mode')) {
-          await this.addCapability('salus_hold_mode');
-        }
-        const pendingHoldModeBefore = this._pendingHoldMode;
-        const hasPendingHoldMode = Date.now() < this._pendingHoldModeUntil && this._pendingHoldMode;
-        if (hasPendingHoldMode) {
-          if (holdMode === this._pendingHoldMode) {
-            this._pendingHoldMode = null;
-            this._pendingHoldModeUntil = 0;
-            await this.setCapabilityValue('salus_hold_mode', holdMode);
-          } else {
-            // Keep the optimistic value until the cloud confirms or the window expires.
-            await this.setCapabilityValue('salus_hold_mode', this._pendingHoldMode);
-          }
-        } else {
+      const pendingHoldModeBefore = this._pendingHoldMode;
+      const hasPendingHoldMode = Date.now() < this._pendingHoldModeUntil && this._pendingHoldMode;
+      if (hasPendingHoldMode) {
+        if (holdMode === this._pendingHoldMode) {
           this._pendingHoldMode = null;
           this._pendingHoldModeUntil = 0;
           await this.setCapabilityValue('salus_hold_mode', holdMode);
-        }
-        // Track cloud-confirmed active modes too, so changes made in the
-        // Salus app itself are what the onoff toggle later restores. Skip
-        // stale cloud values while an optimistic change is still pending.
-        if (!hasPendingHoldMode || holdMode === pendingHoldModeBefore) {
-          await this._rememberActiveHoldMode(holdMode);
-        }
-      }
-
-      // Active heating/cooling from RunningState (1 = heating, 2 = cooling).
-      if (typeof runningState === 'number') {
-        await this._updateActiveState(
-          'salus_heating_active',
-          runningState === 1,
-          this.driver.heatingStartedTrigger,
-          this.driver.heatingStoppedTrigger,
-        );
-        await this._updateActiveState(
-          'salus_cooling_active',
-          runningState === 2,
-          this.driver.coolingStartedTrigger,
-          this.driver.coolingStoppedTrigger,
-        );
-      }
-
-      await this.applyTargetTemperatureOptionsFromShadow(own._shadow_properties || {}, targetTemperature);
-
-      if (typeof targetTemperature === 'number') {
-        if (!isStandbySentinelTarget(targetTemperature)) {
-          await this.rememberTargetTemperature(targetTemperature);
-        }
-        const hasPending = Date.now() < this._pendingTargetUntil && typeof this._pendingTargetTemperature === 'number';
-        if (hasPending) {
-          const delta = Math.abs(targetTemperature - this._pendingTargetTemperature);
-          if (delta <= 0.2) {
-            // Cloud confirmed the requested target.
-            this._pendingTargetTemperature = null;
-            this._pendingTargetUntil = 0;
-            await this.setCapabilityValue('target_temperature', targetTemperature);
-          } else {
-            // Keep optimistic value a bit longer to avoid visual snap-back.
-            await this.setCapabilityValue('target_temperature', this._pendingTargetTemperature);
-          }
         } else {
+          // Keep the optimistic value until the cloud confirms or the window expires.
+          await this.setCapabilityValue('salus_hold_mode', this._pendingHoldMode);
+        }
+      } else {
+        this._pendingHoldMode = null;
+        this._pendingHoldModeUntil = 0;
+        await this.setCapabilityValue('salus_hold_mode', holdMode);
+      }
+      // Track cloud-confirmed active modes too, so changes made in the
+      // Salus app itself are what the onoff toggle later restores. Skip
+      // stale cloud values while an optimistic change is still pending.
+      if (!hasPendingHoldMode || holdMode === pendingHoldModeBefore) {
+        await this._rememberActiveHoldMode(holdMode);
+      }
+    }
+
+    // Active heating/cooling from RunningState (1 = heating, 2 = cooling).
+    if (typeof runningState === 'number') {
+      await this._updateActiveState(
+        'salus_heating_active',
+        runningState === 1,
+        this.driver.heatingStartedTrigger,
+        this.driver.heatingStoppedTrigger,
+      );
+      await this._updateActiveState(
+        'salus_cooling_active',
+        runningState === 2,
+        this.driver.coolingStartedTrigger,
+        this.driver.coolingStoppedTrigger,
+      );
+    }
+
+    await this.applyTargetTemperatureOptionsFromShadow(own._shadow_properties || {}, targetTemperature);
+
+    if (typeof targetTemperature === 'number') {
+      if (!isStandbySentinelTarget(targetTemperature)) {
+        await this.rememberTargetTemperature(targetTemperature);
+      }
+      const hasPending = Date.now() < this._pendingTargetUntil && typeof this._pendingTargetTemperature === 'number';
+      if (hasPending) {
+        const delta = Math.abs(targetTemperature - this._pendingTargetTemperature);
+        if (delta <= 0.2) {
+          // Cloud confirmed the requested target.
           this._pendingTargetTemperature = null;
           this._pendingTargetUntil = 0;
           await this.setCapabilityValue('target_temperature', targetTemperature);
-        }
-      }
-      if (this.hasCapability('onoff')) {
-        const hasPendingOnOff = Date.now() < this._pendingOnOffUntil && typeof this._pendingOnOff === 'boolean';
-        if (hasPendingOnOff) {
-          if (onoff === this._pendingOnOff) {
-            this._pendingOnOff = null;
-            this._pendingOnOffUntil = 0;
-            this._lastOnOff = onoff;
-            await this.setCapabilityValue('onoff', onoff);
-          } else {
-            this._lastOnOff = this._pendingOnOff;
-            await this.setCapabilityValue('onoff', this._pendingOnOff);
-          }
         } else {
+          // Keep optimistic value a bit longer to avoid visual snap-back.
+          await this.setCapabilityValue('target_temperature', this._pendingTargetTemperature);
+        }
+      } else {
+        this._pendingTargetTemperature = null;
+        this._pendingTargetUntil = 0;
+        await this.setCapabilityValue('target_temperature', targetTemperature);
+      }
+    }
+    if (this.hasCapability('onoff')) {
+      const hasPendingOnOff = Date.now() < this._pendingOnOffUntil && typeof this._pendingOnOff === 'boolean';
+      if (hasPendingOnOff) {
+        if (onoff === this._pendingOnOff) {
           this._pendingOnOff = null;
           this._pendingOnOffUntil = 0;
           this._lastOnOff = onoff;
           await this.setCapabilityValue('onoff', onoff);
+        } else {
+          this._lastOnOff = this._pendingOnOff;
+          await this.setCapabilityValue('onoff', this._pendingOnOff);
         }
+      } else {
+        this._pendingOnOff = null;
+        this._pendingOnOffUntil = 0;
+        this._lastOnOff = onoff;
+        await this.setCapabilityValue('onoff', onoff);
       }
-      if (this.hasCapability('thermostat_mode')) {
-        let effectiveMode = thermostatMode;
-        // Fall back to the remembered mode when cloud flags are ambiguous (on, idle, no mapping).
-        if (!effectiveMode && onoff && runningState === 0 && this._lastActiveThermostatMode) {
-          effectiveMode = this._lastActiveThermostatMode;
-        }
-
-        if (effectiveMode) {
-          this._lastThermostatMode = effectiveMode;
-          if (effectiveMode === 'heat' || effectiveMode === 'cool') {
-            this._lastActiveThermostatMode = effectiveMode;
-          }
-          await this.setCapabilityValue('thermostat_mode', effectiveMode);
-        }
-        if (strongActiveMode) {
-          this._lastActiveThermostatMode = strongActiveMode;
-        }
+    }
+    if (this.hasCapability('thermostat_mode')) {
+      let effectiveMode = thermostatMode;
+      // Fall back to the remembered mode when cloud flags are ambiguous (on, idle, no mapping).
+      if (!effectiveMode && onoff && runningState === 0 && this._lastActiveThermostatMode) {
+        effectiveMode = this._lastActiveThermostatMode;
       }
 
-      await this.setAvailable();
-    } catch (error) {
-      this.error('Failed syncing Salus sensor', error);
-      await this.setUnavailable(error.message);
+      if (effectiveMode) {
+        this._lastThermostatMode = effectiveMode;
+        if (effectiveMode === 'heat' || effectiveMode === 'cool') {
+          this._lastActiveThermostatMode = effectiveMode;
+        }
+        await this.setCapabilityValue('thermostat_mode', effectiveMode);
+      }
+      if (strongActiveMode) {
+        this._lastActiveThermostatMode = strongActiveMode;
+      }
     }
   }
 }
