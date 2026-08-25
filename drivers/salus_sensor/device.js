@@ -109,9 +109,8 @@ function readThermostatMode(device) {
   const holdMode = readHoldMode(device);
   if (holdMode === 'standby') return 'off';
 
-  const runningState = readRunningState(device);
-  if (runningState === 2) return 'cool';
-  if (runningState === 1) return 'heat';
+  const strongActiveMode = readStrongActiveMode(device);
+  if (strongActiveMode) return strongActiveMode;
 
   const systemMode = readSystemModeRaw(device);
 
@@ -249,6 +248,9 @@ class SalusSensorDevice extends Homey.Device {
     this._pendingTargetUntil = 0;
     this._pendingOnOff = null;
     this._pendingOnOffUntil = 0;
+    this._lastOnOff = null;
+    this._lastThermostatMode = null;
+    this._lastActiveThermostatMode = null;
 
     // Devices paired before target_temperature existed do not get new capabilities automatically.
     if (!this.hasCapability('target_temperature')) {
