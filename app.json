@@ -243,7 +243,9 @@
         "salus_cooling_active"
       ],
       "energy": {
-        "batteries": ["INTERNAL"]
+        "batteries": [
+          "INTERNAL"
+        ]
       },
       "capabilitiesOptions": {
         "target_temperature": {
@@ -295,6 +297,119 @@
         }
       ],
       "pair": [
+        {
+          "id": "loading",
+          "template": "loading"
+        },
+        {
+          "id": "login_credentials",
+          "template": "login_credentials",
+          "options": {
+            "title": {
+              "en": "Sign in to Salus Cloud"
+            },
+            "usernameLabel": {
+              "en": "Email"
+            },
+            "usernamePlaceholder": {
+              "en": "name@example.com"
+            },
+            "passwordLabel": {
+              "en": "Password"
+            },
+            "passwordPlaceholder": {
+              "en": "Password"
+            }
+          }
+        },
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ],
+      "repair": [
+        {
+          "id": "login_credentials",
+          "template": "login_credentials",
+          "options": {
+            "title": {
+              "en": "Sign in to Salus Cloud"
+            },
+            "usernameLabel": {
+              "en": "Email"
+            },
+            "usernamePlaceholder": {
+              "en": "name@example.com"
+            },
+            "passwordLabel": {
+              "en": "Password"
+            },
+            "passwordPlaceholder": {
+              "en": "Password"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "salus_plug",
+      "name": {
+        "en": "Smart Plug"
+      },
+      "description": {
+        "en": "Salus SPE600 smart plug with power metering."
+      },
+      "class": "socket",
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [
+        "cloud"
+      ],
+      "capabilities": [
+        "onoff"
+      ],
+      "images": {
+        "small": "/drivers/salus_plug/assets/images/small.png",
+        "large": "/drivers/salus_plug/assets/images/large.png",
+        "xlarge": "/drivers/salus_plug/assets/images/xlarge.png"
+      },
+      "settings": [
+        {
+          "id": "device_model",
+          "type": "text",
+          "label": {
+            "en": "Detected Model"
+          }
+        },
+        {
+          "id": "device_code",
+          "type": "text",
+          "label": {
+            "en": "Salus Device Code"
+          }
+        },
+        {
+          "id": "email",
+          "type": "label",
+          "label": {
+            "en": "Salus Account Email"
+          },
+          "value": "Stored securely during pairing"
+        }
+      ],
+      "pair": [
+        {
+          "id": "loading",
+          "template": "loading"
+        },
         {
           "id": "login_credentials",
           "template": "login_credentials",
