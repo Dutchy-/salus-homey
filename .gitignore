@@ -11,6 +11,10 @@ node_modules/
 debug-output/
 reference-salus-it600/
 
+# Credentials / local environment
+*.env
+.env*
+
 # Logs
 *.log
 npm-debug.log*
