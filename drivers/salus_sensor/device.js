@@ -444,6 +444,29 @@ class SalusSensorDevice extends Homey.Device {
     await this.setStoreValue(LAST_TARGET_OPTIONS_STORE_KEY, opts);
   }
 
+  /**
+   * Update a heating/cooling active capability and fire start/stop flow
+   * triggers on transitions. The first-ever value never triggers, so an app
+   * restart cannot fire flows for a state that was already in effect.
+   */
+  async _updateActiveState(capability, active, startedTrigger, stoppedTrigger) {
+    if (!this.hasCapability(capability)) {
+      await this.addCapability(capability);
+    }
+    const previous = this.getCapabilityValue(capability);
+    if (previous === active) {
+      return;
+    }
+    await this.setCapabilityValue(capability, active);
+    if (previous === null || previous === undefined) {
+      return;
+    }
+    const card = active ? startedTrigger : stoppedTrigger;
+    if (card) {
+      await card.trigger(this).catch(this.error);
+    }
+  }
+
   async syncFromCloud() {
     try {
       const allDevices = await this.client.getAllDevices();
@@ -489,6 +512,22 @@ class SalusSensorDevice extends Homey.Device {
         }
         await this.setCapabilityValue('measure_battery', batteryPercentage);
         await this.setCapabilityValue('alarm_battery', batteryPercentage <= 20);
+      }
+
+      // Active heating/cooling from RunningState (1 = heating, 2 = cooling).
+      if (typeof runningState === 'number') {
+        await this._updateActiveState(
+          'salus_heating_active',
+          runningState === 1,
+          this.driver.heatingStartedTrigger,
+          this.driver.heatingStoppedTrigger,
+        );
+        await this._updateActiveState(
+          'salus_cooling_active',
+          runningState === 2,
+          this.driver.coolingStartedTrigger,
+          this.driver.coolingStoppedTrigger,
+        );
       }
 
       await this.applyTargetTemperatureOptionsFromShadow(own._shadow_properties || {}, targetTemperature);

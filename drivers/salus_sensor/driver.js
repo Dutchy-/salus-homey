@@ -22,6 +22,18 @@ function hasDayOneSensors(device) {
 
 class SalusSensorDriver extends Homey.Driver {
   async onInit() {
+    this.heatingStartedTrigger = this.homey.flow.getDeviceTriggerCard('heating_started');
+    this.heatingStoppedTrigger = this.homey.flow.getDeviceTriggerCard('heating_stopped');
+    this.coolingStartedTrigger = this.homey.flow.getDeviceTriggerCard('cooling_started');
+    this.coolingStoppedTrigger = this.homey.flow.getDeviceTriggerCard('cooling_stopped');
+
+    this.homey.flow
+      .getConditionCard('is_heating')
+      .registerRunListener(async (args) => args.device.getCapabilityValue('salus_heating_active') === true);
+    this.homey.flow
+      .getConditionCard('is_cooling')
+      .registerRunListener(async (args) => args.device.getCapabilityValue('salus_cooling_active') === true);
+
     this.log('Salus sensor driver initialized');
   }
 

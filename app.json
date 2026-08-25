@@ -48,6 +48,126 @@
     "name": "Edwin Smulders",
     "email": "edwin@edwinsmulders.eu"
   },
+  "capabilities": {
+    "salus_heating_active": {
+      "type": "boolean",
+      "title": {
+        "en": "Heating"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "icon": "/assets/heating.svg",
+      "insights": true,
+      "insightsTitleTrue": {
+        "en": "Heating started"
+      },
+      "insightsTitleFalse": {
+        "en": "Heating stopped"
+      }
+    },
+    "salus_cooling_active": {
+      "type": "boolean",
+      "title": {
+        "en": "Cooling"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "icon": "/assets/cooling.svg",
+      "insights": true,
+      "insightsTitleTrue": {
+        "en": "Cooling started"
+      },
+      "insightsTitleFalse": {
+        "en": "Cooling stopped"
+      }
+    }
+  },
+  "flow": {
+    "triggers": [
+      {
+        "id": "heating_started",
+        "title": {
+          "en": "Heating started"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=salus_sensor"
+          }
+        ]
+      },
+      {
+        "id": "heating_stopped",
+        "title": {
+          "en": "Heating stopped"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=salus_sensor"
+          }
+        ]
+      },
+      {
+        "id": "cooling_started",
+        "title": {
+          "en": "Cooling started"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=salus_sensor"
+          }
+        ]
+      },
+      {
+        "id": "cooling_stopped",
+        "title": {
+          "en": "Cooling stopped"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=salus_sensor"
+          }
+        ]
+      }
+    ],
+    "conditions": [
+      {
+        "id": "is_heating",
+        "title": {
+          "en": "Is !{{heating|not heating}}"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=salus_sensor"
+          }
+        ]
+      },
+      {
+        "id": "is_cooling",
+        "title": {
+          "en": "Is !{{cooling|not cooling}}"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=salus_sensor"
+          }
+        ]
+      }
+    ]
+  },
   "drivers": [
     {
       "id": "salus_sensor",
@@ -69,7 +189,9 @@
         "measure_temperature",
         "measure_humidity",
         "target_temperature",
-        "thermostat_mode"
+        "thermostat_mode",
+        "salus_heating_active",
+        "salus_cooling_active"
       ],
       "energy": {
         "batteries": ["INTERNAL"]
