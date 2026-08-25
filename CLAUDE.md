@@ -20,6 +20,8 @@ npm run dump:salus     # dump raw cloud API data to debug-output/ (needs SALUS_E
 
 There is no test suite. Verify changes with `homey app validate` and, for behavior changes, by running against a real Homey.
 
+**WARNING — never use the `--clean` flag** (`homey app install --clean` / `homey app run --clean`) without explicit confirmation from the user. It wipes the app's data on the Homey, which **deletes all paired devices**, breaking flows and losing their insights history permanently.
+
 ## Conventions
 
 ### Commits
