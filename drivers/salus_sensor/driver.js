@@ -66,9 +66,14 @@ class SalusSensorDriver extends Homey.Driver {
             name,
             data,
             icon: '/icon.svg',
+            // Credentials live in the device store, not settings, so they are
+            // not exposed through the settings UI or developer tools.
+            store: {
+              salus_email: credentials.email,
+              salus_password: credentials.password,
+            },
             settings: {
               email: credentials.email,
-              password: credentials.password,
               device_model: device.model || 'SQ610',
               device_family: 'Quantum Thermostat (SQ610RF/SQ610)',
               device_code: device.device_code || '',
@@ -76,6 +81,23 @@ class SalusSensorDriver extends Homey.Driver {
           };
         })
         .filter(Boolean);
+    });
+  }
+
+  async onRepair(session, device) {
+    session.setHandler('login', async (data = {}) => {
+      const email = (data.username || '').trim();
+      const password = data.password || '';
+      if (!email || !password) {
+        throw new Error('Email and password are required');
+      }
+
+      // Validate against Salus cloud before storing anything.
+      const client = new SalusCloudClient({ email, password });
+      await client.ensureAuth();
+
+      await device.applyNewCredentials(email, password);
+      return true;
     });
   }
 }

@@ -158,6 +158,67 @@ function resolveStandbySentinelForMode(mode) {
 }
 
 class SalusSensorDevice extends Homey.Device {
+  /**
+   * Credentials live in the device store. Devices paired before this existed
+   * kept them in settings; migrate once, then purge the plaintext password.
+   */
+  async getCredentials() {
+    let email = this.getStoreValue('salus_email');
+    let password = this.getStoreValue('salus_password');
+
+    if (!password) {
+      const legacyEmail = this.getSetting('email');
+      const legacyPassword = this.getSetting('password');
+      if (legacyPassword) {
+        await this.setStoreValue('salus_email', legacyEmail);
+        await this.setStoreValue('salus_password', legacyPassword);
+        email = legacyEmail;
+        password = legacyPassword;
+      }
+    }
+
+    // Purge plaintext whenever a legacy password lingers in settings and the
+    // store copy is confirmed readable — retried every init until it succeeds.
+    if (this.getSetting('password') && this.getStoreValue('salus_password')) {
+      await this.setSettings({ password: '' }).catch((error) => {
+        this.error('Could not blank legacy password setting', error);
+      });
+    }
+
+    return { email, password };
+  }
+
+  _createClient(email, password) {
+    return new SalusCloudClient({
+      email,
+      password,
+      onAuthEvent: (event) => {
+        const label = `${String(email || '').trim().toLowerCase()} [${this.getName()}]`;
+        if (typeof this.homey.app?._recordAuthEvent === 'function') {
+          this.homey.app._recordAuthEvent(label, event);
+        } else {
+          this.log(`[auth] ${event.type}`);
+        }
+      },
+    });
+  }
+
+  /** Called from the repair flow after the new credentials validated against Salus cloud. */
+  async applyNewCredentials(email, password) {
+    await this.setStoreValue('salus_email', email);
+    await this.setStoreValue('salus_password', password);
+
+    if (typeof this.homey.app?.unregisterDeviceFromSharedPolling === 'function') {
+      this.homey.app.unregisterDeviceFromSharedPolling(this);
+    }
+    this.client = this._createClient(email, password);
+    if (typeof this.homey.app?.registerDeviceForSharedPolling === 'function') {
+      await this.homey.app.registerDeviceForSharedPolling(this, email, password);
+    }
+    await this.setAvailable().catch(() => {});
+    await this.refreshSoon(0);
+  }
+
   clampTargetToKnownRange(value) {
     if (typeof value !== 'number' || !Number.isFinite(value)) return null;
     const min = typeof this._minTargetC === 'number' ? this._minTargetC : TARGET_TEMPERATURE_OPTIONS.min;
@@ -231,18 +292,9 @@ class SalusSensorDevice extends Homey.Device {
   }
 
   async onInit() {
-    this.client = new SalusCloudClient({
-      email: this.getSetting('email'),
-      password: this.getSetting('password'),
-      onAuthEvent: (event) => {
-        const label = `${String(this.getSetting('email') || '').trim().toLowerCase()} [${this.getName()}]`;
-        if (typeof this.homey.app?._recordAuthEvent === 'function') {
-          this.homey.app._recordAuthEvent(label, event);
-        } else {
-          this.log(`[auth] ${event.type}`);
-        }
-      },
-    });
+    const { email, password } = await this.getCredentials();
+    this._credentials = { email, password };
+    this.client = this._createClient(email, password);
     this._targetTempOptsKey = null;
     this._pendingTargetTemperature = null;
     this._pendingTargetUntil = 0;
@@ -335,11 +387,7 @@ class SalusSensorDevice extends Homey.Device {
     });
 
     if (typeof this.homey.app?.registerDeviceForSharedPolling === 'function') {
-      await this.homey.app.registerDeviceForSharedPolling(
-        this,
-        this.getSetting('email'),
-        this.getSetting('password'),
-      );
+      await this.homey.app.registerDeviceForSharedPolling(this, email, password);
       await this.refreshSoon(0);
     } else {
       await this.syncFromCloud();
