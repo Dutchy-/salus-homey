@@ -8,6 +8,8 @@ Homey Pro app (SDK 3) integrating Salus Quantum thermostats (SQ610/SQ610RF) thro
 
 **Caution**: several shadow-property mappings and mode handlings look wrong but are reverse-engineered device behavior, cross-referenced against the official Salus app. Read the code comments before "fixing" anything in that area.
 
+**Driver id**: the driver is named `salus_sensor` for historical reasons (it started as a sensor-only integration) even though it is a thermostat. Do not rename it: paired devices are bound to the driver id and Homey has no way to migrate them, so a rename would orphan every device on every install. Users only ever see the display name ("Quantum Thermostat"), which is free to change.
+
 ## Commands
 
 ```bash
