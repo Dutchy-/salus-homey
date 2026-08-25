@@ -16,6 +16,9 @@ const TARGET_TEMPERATURE_OPTIONS = {
   step: 0.5,
 };
 const TARGET_SENTINEL_EPSILON = 0.2;
+const HOLD_MODE_TYPES = { schedule: 0, hold: 2, standby: 7 };
+const HOLD_MODE_CONFIRM_TIMEOUT_MS = 30 * 1000;
+const LAST_ACTIVE_HOLD_MODE_STORE_KEY = 'last_active_hold_mode';
 
 function deviceMatchesHomeyData(device, pairedId) {
   const p = String(pairedId);
@@ -261,6 +264,70 @@ class SalusSensorDevice extends Homey.Device {
     }, delayMs);
   }
 
+  /** Remember the last non-standby mode so the onoff toggle can restore it. */
+  async _rememberActiveHoldMode(mode) {
+    if (mode !== 'schedule' && mode !== 'hold') return;
+    if (this._lastActiveHoldMode === mode) return;
+    this._lastActiveHoldMode = mode;
+    await this.setStoreValue(LAST_ACTIVE_HOLD_MODE_STORE_KEY, mode);
+  }
+
+  async getRememberedActiveHoldMode() {
+    const stored = this._lastActiveHoldMode ?? (await this.getStoreValue(LAST_ACTIVE_HOLD_MODE_STORE_KEY));
+    return stored === 'schedule' || stored === 'hold' ? stored : 'hold';
+  }
+
+  async _setHoldModeOptimistic(mode) {
+    this._pendingHoldMode = mode;
+    this._pendingHoldModeUntil = Date.now() + HOLD_MODE_CONFIRM_TIMEOUT_MS;
+    if (this.hasCapability('salus_hold_mode')) {
+      await this.setCapabilityValue('salus_hold_mode', mode);
+    }
+  }
+
+  /**
+   * Shared write path for the preset picker, the resume-schedule flow action
+   * and (indirectly) the onoff toggle. Maps mode to Salus HoldType.
+   */
+  async applyHoldMode(mode) {
+    const holdType = HOLD_MODE_TYPES[mode];
+    if (holdType === undefined) {
+      throw new Error(`Unknown hold mode: ${mode}`);
+    }
+    const deviceCode = this.getSetting('device_code');
+    if (!deviceCode) {
+      throw new Error('Missing Salus device code');
+    }
+    const shadowIndex = this.getData().shadow_device_index || undefined;
+
+    await this.client.setHoldMode(deviceCode, holdType, shadowIndex);
+
+    if (mode === 'standby') {
+      await this.applyLocalOnOff(false);
+    } else {
+      if (mode === 'hold' && this._lastOnOff === false) {
+        // Waking from standby into hold restores the previous setpoint,
+        // matching the onoff toggle. Schedule mode sets its own target.
+        const rememberedTarget = (await this.getRememberedTargetTemperature()) ?? DEFAULT_RESTORE_TARGET_C;
+        await this.client.setTemperature(
+          deviceCode,
+          rememberedTarget,
+          shadowIndex,
+          this._lastActiveThermostatMode || null,
+        );
+        this._pendingTargetTemperature = rememberedTarget;
+        this._pendingTargetUntil = Date.now() + TARGET_CONFIRM_TIMEOUT_MS;
+        await this.setCapabilityValue('target_temperature', rememberedTarget);
+      }
+      await this.applyLocalOnOff(true);
+    }
+
+    // After applyLocalOnOff so its hold/standby guess is overridden by the real mode.
+    await this._setHoldModeOptimistic(mode);
+    await this._rememberActiveHoldMode(mode);
+    await this.refreshSoon();
+  }
+
   async applyLocalOnOff(onoff) {
     this._pendingOnOff = onoff;
     this._pendingOnOffUntil = Date.now() + ONOFF_CONFIRM_TIMEOUT_MS;
@@ -268,6 +335,7 @@ class SalusSensorDevice extends Homey.Device {
     if (this.hasCapability('onoff')) {
       await this.setCapabilityValue('onoff', onoff);
     }
+    await this._setHoldModeOptimistic(onoff ? 'hold' : 'standby');
     if (onoff === false && this.hasCapability('target_temperature')) {
       // Reflect standby setpoint immediately to avoid cloud-lag snap.
       const modeForStandby =
@@ -310,6 +378,9 @@ class SalusSensorDevice extends Homey.Device {
     this._pendingTargetUntil = 0;
     this._pendingOnOff = null;
     this._pendingOnOffUntil = 0;
+    this._pendingHoldMode = null;
+    this._pendingHoldModeUntil = 0;
+    this._lastActiveHoldMode = null;
     this._lastOnOff = null;
     this._lastThermostatMode = null;
     this._lastActiveThermostatMode = null;
@@ -353,6 +424,9 @@ class SalusSensorDevice extends Homey.Device {
         // Homey UX: changing setpoint should wake thermostat into Hold mode.
         await this.client.setHoldMode(deviceCode, 2, this.getData().shadow_device_index || undefined);
         await this.applyLocalOnOff(true);
+      } else {
+        // Any setpoint change puts the thermostat into permanent hold.
+        await this._setHoldModeOptimistic('hold');
       }
       await this.client.setTemperature(
         deviceCode,
@@ -364,36 +438,21 @@ class SalusSensorDevice extends Homey.Device {
     });
 
     this.registerCapabilityListener('onoff', async (value) => {
-      const deviceCode = this.getSetting('device_code');
-      if (!deviceCode) {
-        throw new Error('Missing Salus device code');
-      }
-      const shadowIndex = this.getData().shadow_device_index || undefined;
-
       if (value) {
-        // Restore previous target when re-enabling thermostat.
-        const rememberedTarget = (await this.getRememberedTargetTemperature()) ?? DEFAULT_RESTORE_TARGET_C;
-        await this.client.setHoldMode(deviceCode, 2, shadowIndex);
-        await this.client.setTemperature(
-          deviceCode,
-          rememberedTarget,
-          shadowIndex,
-          this._lastActiveThermostatMode || null,
-        );
-        this._pendingTargetTemperature = rememberedTarget;
-        this._pendingTargetUntil = Date.now() + TARGET_CONFIRM_TIMEOUT_MS;
-        await this.setCapabilityValue('target_temperature', rememberedTarget);
+        // Resume whatever the thermostat was doing before standby (default: hold).
+        await this.applyHoldMode(await this.getRememberedActiveHoldMode());
       } else {
-        await this.client.setHoldMode(deviceCode, 7, shadowIndex);
+        await this.applyHoldMode('standby');
       }
-
-      await this.applyLocalOnOff(value);
-      await this.refreshSoon();
     });
 
     // Heat/cool comes from a separate heatpump controller app, so this capability is reflection-only here.
     this.registerCapabilityListener('thermostat_mode', async () => {
       throw new Error('Heatpump mode is read-only in this app and managed by your separate heatpump integration.');
+    });
+
+    this.registerCapabilityListener('salus_hold_mode', async (value) => {
+      await this.applyHoldMode(value);
     });
 
     if (typeof this.homey.app?.registerDeviceForSharedPolling === 'function') {
@@ -512,6 +571,35 @@ class SalusSensorDevice extends Homey.Device {
         }
         await this.setCapabilityValue('measure_battery', batteryPercentage);
         await this.setCapabilityValue('alarm_battery', batteryPercentage <= 20);
+      }
+
+      const holdMode = readHoldMode(own);
+      if (holdMode) {
+        if (!this.hasCapability('salus_hold_mode')) {
+          await this.addCapability('salus_hold_mode');
+        }
+        const pendingHoldModeBefore = this._pendingHoldMode;
+        const hasPendingHoldMode = Date.now() < this._pendingHoldModeUntil && this._pendingHoldMode;
+        if (hasPendingHoldMode) {
+          if (holdMode === this._pendingHoldMode) {
+            this._pendingHoldMode = null;
+            this._pendingHoldModeUntil = 0;
+            await this.setCapabilityValue('salus_hold_mode', holdMode);
+          } else {
+            // Keep the optimistic value until the cloud confirms or the window expires.
+            await this.setCapabilityValue('salus_hold_mode', this._pendingHoldMode);
+          }
+        } else {
+          this._pendingHoldMode = null;
+          this._pendingHoldModeUntil = 0;
+          await this.setCapabilityValue('salus_hold_mode', holdMode);
+        }
+        // Track cloud-confirmed active modes too, so changes made in the
+        // Salus app itself are what the onoff toggle later restores. Skip
+        // stale cloud values while an optimistic change is still pending.
+        if (!hasPendingHoldMode || holdMode === pendingHoldModeBefore) {
+          await this._rememberActiveHoldMode(holdMode);
+        }
       }
 
       // Active heating/cooling from RunningState (1 = heating, 2 = cooling).

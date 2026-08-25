@@ -34,6 +34,13 @@ class SalusSensorDriver extends Homey.Driver {
       .getConditionCard('is_cooling')
       .registerRunListener(async (args) => args.device.getCapabilityValue('salus_cooling_active') === true);
 
+    this.homey.flow
+      .getActionCard('resume_schedule')
+      .registerRunListener(async (args) => {
+        await args.device.applyHoldMode('schedule');
+        return true;
+      });
+
     this.log('Salus sensor driver initialized');
   }
 

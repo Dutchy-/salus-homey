@@ -66,6 +66,36 @@
         "en": "Heating stopped"
       }
     },
+    "salus_hold_mode": {
+      "type": "enum",
+      "title": {
+        "en": "Preset"
+      },
+      "values": [
+        {
+          "id": "schedule",
+          "title": {
+            "en": "Follow schedule"
+          }
+        },
+        {
+          "id": "hold",
+          "title": {
+            "en": "Permanent hold"
+          }
+        },
+        {
+          "id": "standby",
+          "title": {
+            "en": "Standby"
+          }
+        }
+      ],
+      "getable": true,
+      "setable": true,
+      "uiComponent": "picker",
+      "icon": "/assets/schedule.svg"
+    },
     "salus_cooling_active": {
       "type": "boolean",
       "title": {
@@ -139,6 +169,24 @@
         ]
       }
     ],
+    "actions": [
+      {
+        "id": "resume_schedule",
+        "title": {
+          "en": "Resume schedule"
+        },
+        "hint": {
+          "en": "Return the thermostat to its own programmed schedule, ending a manual hold or standby."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=salus_sensor"
+          }
+        ]
+      }
+    ],
     "conditions": [
       {
         "id": "is_heating",
@@ -190,6 +238,7 @@
         "measure_humidity",
         "target_temperature",
         "thermostat_mode",
+        "salus_hold_mode",
         "salus_heating_active",
         "salus_cooling_active"
       ],
