@@ -412,29 +412,6 @@ class SalusSensorDevice extends SalusDeviceBase {
     await this.setStoreValue(LAST_TARGET_OPTIONS_STORE_KEY, opts);
   }
 
-  /**
-   * Update a heating/cooling active capability and fire start/stop flow
-   * triggers on transitions. The first-ever value never triggers, so an app
-   * restart cannot fire flows for a state that was already in effect.
-   */
-  async _updateActiveState(capability, active, startedTrigger, stoppedTrigger) {
-    if (!this.hasCapability(capability)) {
-      await this.addCapability(capability);
-    }
-    const previous = this.getCapabilityValue(capability);
-    if (previous === active) {
-      return;
-    }
-    await this.setCapabilityValue(capability, active);
-    if (previous === null || previous === undefined) {
-      return;
-    }
-    const card = active ? startedTrigger : stoppedTrigger;
-    if (card) {
-      await card.trigger(this).catch(this.error);
-    }
-  }
-
   async applyCloudSnapshot(own) {
     const temperature = readTemperature(own);
     const targetTemperature = readTargetTemperature(own);

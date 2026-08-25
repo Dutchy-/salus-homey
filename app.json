@@ -112,6 +112,57 @@
       "insightsTitleFalse": {
         "en": "Cooling stopped"
       }
+    },
+    "salus_pump_output": {
+      "type": "boolean",
+      "title": {
+        "en": "Pump output"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "icon": "/assets/pump.svg",
+      "insights": true,
+      "insightsTitleTrue": {
+        "en": "Pump output on"
+      },
+      "insightsTitleFalse": {
+        "en": "Pump output off"
+      }
+    },
+    "salus_boiler_output": {
+      "type": "boolean",
+      "title": {
+        "en": "Boiler output"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "icon": "/assets/heating.svg",
+      "insights": true,
+      "insightsTitleTrue": {
+        "en": "Boiler output on"
+      },
+      "insightsTitleFalse": {
+        "en": "Boiler output off"
+      }
+    },
+    "salus_zone_active": {
+      "type": "boolean",
+      "title": {
+        "en": "Zone"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "icon": "/assets/zone.svg",
+      "insights": true,
+      "insightsTitleTrue": {
+        "en": "Zone opened"
+      },
+      "insightsTitleFalse": {
+        "en": "Zone closed"
+      }
     }
   },
   "flow": {
@@ -167,6 +218,102 @@
             "filter": "driver_id=salus_sensor"
           }
         ]
+      },
+      {
+        "id": "pump_output_on",
+        "title": {
+          "en": "Pump output turned on"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=salus_wiring_center"
+          }
+        ]
+      },
+      {
+        "id": "pump_output_off",
+        "title": {
+          "en": "Pump output turned off"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=salus_wiring_center"
+          }
+        ]
+      },
+      {
+        "id": "boiler_output_on",
+        "title": {
+          "en": "Boiler output turned on"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=salus_wiring_center"
+          }
+        ]
+      },
+      {
+        "id": "boiler_output_off",
+        "title": {
+          "en": "Boiler output turned off"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=salus_wiring_center"
+          }
+        ]
+      },
+      {
+        "id": "zone_activated",
+        "title": {
+          "en": "A zone opened"
+        },
+        "tokens": [
+          {
+            "name": "zone",
+            "type": "number",
+            "title": {
+              "en": "Zone"
+            }
+          }
+        ],
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=salus_wiring_center"
+          }
+        ]
+      },
+      {
+        "id": "zone_deactivated",
+        "title": {
+          "en": "A zone closed"
+        },
+        "tokens": [
+          {
+            "name": "zone",
+            "type": "number",
+            "title": {
+              "en": "Zone"
+            }
+          }
+        ],
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=salus_wiring_center"
+          }
+        ]
       }
     ],
     "actions": [
@@ -211,6 +358,32 @@
             "type": "device",
             "name": "device",
             "filter": "driver_id=salus_sensor"
+          }
+        ]
+      },
+      {
+        "id": "is_pump_output_on",
+        "title": {
+          "en": "Pump output is !{{on|off}}"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=salus_wiring_center"
+          }
+        ]
+      },
+      {
+        "id": "is_boiler_output_on",
+        "title": {
+          "en": "Boiler output is !{{on|off}}"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=salus_wiring_center"
           }
         ]
       }
@@ -380,6 +553,116 @@
         "small": "/drivers/salus_plug/assets/images/small.png",
         "large": "/drivers/salus_plug/assets/images/large.png",
         "xlarge": "/drivers/salus_plug/assets/images/xlarge.png"
+      },
+      "settings": [
+        {
+          "id": "device_model",
+          "type": "text",
+          "label": {
+            "en": "Detected Model"
+          }
+        },
+        {
+          "id": "device_code",
+          "type": "text",
+          "label": {
+            "en": "Salus Device Code"
+          }
+        },
+        {
+          "id": "email",
+          "type": "label",
+          "label": {
+            "en": "Salus Account Email"
+          },
+          "value": "Stored securely during pairing"
+        }
+      ],
+      "pair": [
+        {
+          "id": "loading",
+          "template": "loading"
+        },
+        {
+          "id": "login_credentials",
+          "template": "login_credentials",
+          "options": {
+            "title": {
+              "en": "Sign in to Salus Cloud"
+            },
+            "usernameLabel": {
+              "en": "Email"
+            },
+            "usernamePlaceholder": {
+              "en": "name@example.com"
+            },
+            "passwordLabel": {
+              "en": "Password"
+            },
+            "passwordPlaceholder": {
+              "en": "Password"
+            }
+          }
+        },
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ],
+      "repair": [
+        {
+          "id": "login_credentials",
+          "template": "login_credentials",
+          "options": {
+            "title": {
+              "en": "Sign in to Salus Cloud"
+            },
+            "usernameLabel": {
+              "en": "Email"
+            },
+            "usernamePlaceholder": {
+              "en": "name@example.com"
+            },
+            "passwordLabel": {
+              "en": "Password"
+            },
+            "passwordPlaceholder": {
+              "en": "Password"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "salus_wiring_center",
+      "name": {
+        "en": "Wiring Centre"
+      },
+      "description": {
+        "en": "Salus underfloor heating wiring centre (CB12RF/KL08RF) with pump, boiler and zone status."
+      },
+      "class": "sensor",
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [
+        "cloud"
+      ],
+      "capabilities": [
+        "salus_pump_output",
+        "salus_boiler_output"
+      ],
+      "images": {
+        "small": "/drivers/salus_wiring_center/assets/images/small.png",
+        "large": "/drivers/salus_wiring_center/assets/images/large.png",
+        "xlarge": "/drivers/salus_wiring_center/assets/images/xlarge.png"
       },
       "settings": [
         {
