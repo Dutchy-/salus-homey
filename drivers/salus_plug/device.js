@@ -43,16 +43,18 @@ function readEnergyKwh(device) {
   return (high * 4294967296 + low) * multiplier / divisor;
 }
 
-function readVoltage(device) {
-  const value = readProps(device)['ep9:sPowerS:MainsVoltage_x10'];
-  return typeof value === 'number' ? value / 10 : null;
-}
-
 class SalusPlugDevice extends SalusDeviceBase {
   async onInit() {
     const { email, password } = await this.connectClient();
     this._pendingOnOff = null;
     this._pendingOnOffUntil = 0;
+
+    // measure_voltage was dropped: the plug reports mains voltage only once
+    // at boot (shadow metadata proves it never refreshes), so presenting it
+    // as a live reading was misleading.
+    if (this.hasCapability('measure_voltage')) {
+      await this.removeCapability('measure_voltage');
+    }
 
     this.registerCapabilityListener('onoff', async (value) => {
       const deviceCode = this.getSetting('device_code');
@@ -87,7 +89,6 @@ class SalusPlugDevice extends SalusDeviceBase {
     const metered = [
       ['measure_power', readPowerWatt(own)],
       ['meter_power', readEnergyKwh(own)],
-      ['measure_voltage', readVoltage(own)],
     ];
     for (const [capability, value] of metered) {
       if (typeof value !== 'number') continue;

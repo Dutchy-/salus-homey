@@ -31,7 +31,7 @@ Thermostats:
 Smart plugs:
 
 - On/off control
-- Power, cumulative energy and mains voltage metering (metering models)
+- Power and cumulative energy metering (metering models)
 
 Wiring centres:
 
