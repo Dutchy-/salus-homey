@@ -1,0 +1,22 @@
+# Files excluded from the published app package.
+# NOTE: .gitignore does NOT apply to app builds - anything present in this
+# directory is packed and shipped unless it is listed here.
+
+# Local diagnostic dumps: contain account and gateway data, never ship these
+debug-output/
+
+# Vendored reference material and dev tooling
+reference-salus-it600/
+scripts/
+CLAUDE.md
+
+# Local environments and credentials
+.venv/
+.venv-tools/
+*.env
+.env*
+
+# OS/editor noise
+.DS_Store
+.idea/
+.vscode/
