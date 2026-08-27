@@ -11,7 +11,7 @@
   },
   "category": "climate",
   "brandColor": "#00428a",
-  "icon": "/assets/icon.png",
+  "icon": "/assets/icon.svg",
   "images": {
     "small": "/assets/images/small.png",
     "large": "/assets/images/large.png",
