@@ -3,6 +3,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const SalusCloudClient = require('../lib/salus-cloud-client');
+const { redact } = require('./redact');
 
 async function main() {
   const email = process.env.SALUS_EMAIL;
@@ -21,7 +22,7 @@ async function main() {
   const gatewaysResponse = await client.request('GET', '/occupants/slider_list');
   await fs.writeFile(
     path.join(outputDir, '01-slider-list-raw.json'),
-    JSON.stringify(gatewaysResponse, null, 2),
+    JSON.stringify(redact(gatewaysResponse), null, 2),
   );
 
   const gateways = Array.isArray(gatewaysResponse?.data)
@@ -55,12 +56,12 @@ async function main() {
 
   await fs.writeFile(
     path.join(outputDir, '02-gateway-details-raw.json'),
-    JSON.stringify(gatewayDetails, null, 2),
+    JSON.stringify(redact(gatewayDetails), null, 2),
   );
 
   await fs.writeFile(
     path.join(outputDir, '03-gateway-items-flattened.json'),
-    JSON.stringify(allItems, null, 2),
+    JSON.stringify(redact(allItems), null, 2),
   );
 
   const deviceCodes = allItems
@@ -74,7 +75,7 @@ async function main() {
 
   await fs.writeFile(
     path.join(outputDir, '04-device-shadows-raw.json'),
-    JSON.stringify(shadowsResponse, null, 2),
+    JSON.stringify(redact(shadowsResponse), null, 2),
   );
 
   // Parse payload JSON strings from success_list for easier inspection.
@@ -91,7 +92,7 @@ async function main() {
 
   await fs.writeFile(
     path.join(outputDir, '05-device-shadows-parsed.json'),
-    JSON.stringify(parsedShadows, null, 2),
+    JSON.stringify(redact(parsedShadows), null, 2),
   );
 
   // Build a compact key map for quick searching.
@@ -109,7 +110,7 @@ async function main() {
 
   await fs.writeFile(
     path.join(outputDir, '06-shadow-property-keys-by-device.json'),
-    JSON.stringify(keyMap, null, 2),
+    JSON.stringify(redact(keyMap), null, 2),
   );
 
   console.log(`Dump complete: ${outputDir}`);

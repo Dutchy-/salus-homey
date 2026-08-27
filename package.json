@@ -6,7 +6,8 @@
   "main": "app.js",
   "license": "MIT",
   "scripts": {
-    "dump:salus": "node scripts/dump-salus-data.js"
+    "dump:salus": "node scripts/dump-salus-data.js",
+    "sanitize:debug": "node scripts/sanitize-debug-output.js"
   },
   "dependencies": {
     "amazon-cognito-identity-js": "^6.3.15",
