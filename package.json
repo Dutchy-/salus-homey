@@ -1,6 +1,6 @@
 {
   "name": "eu.edwinsmulders.salus",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": true,
   "description": "Homey app for Salus cloud sensors",
   "main": "app.js",

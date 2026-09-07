@@ -22,5 +22,8 @@
   },
   "0.3.2": {
     "en": "The smart plug no longer shows a mains voltage reading: the plug only reports that value once at start-up, so it could be days out of date. Also includes a smaller app download and a sharper app icon."
+  },
+  "0.3.3": {
+    "en": "Official device icons for the smart plug and wiring centre."
   }
 }
