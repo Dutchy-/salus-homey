@@ -25,5 +25,8 @@
   },
   "0.3.3": {
     "en": "Official device icons for the smart plug and wiring centre."
+  },
+  "0.3.4": {
+    "en": "Adding devices now records which Salus devices the app does not recognise yet, so a diagnostic report can help add support for them."
   }
 }
