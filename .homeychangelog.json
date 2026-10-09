@@ -28,5 +28,8 @@
   },
   "0.3.4": {
     "en": "Adding devices now records which Salus devices the app does not recognise yet, so a diagnostic report can help add support for them."
+  },
+  "0.3.5": {
+    "en": "Diagnostic reports now include the readings of Salus devices the app does not recognise yet (without identifying details), to help add support for them."
   }
 }
