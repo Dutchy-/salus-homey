@@ -6,11 +6,15 @@ const UNBOUND_ZONE_ADDR = 65535;
 
 /**
  * Dew-protection fields whose semantics are not understood yet (only zeros
- * observed so far). Recorded as invisible app-level insights and a
- * dew_debug app setting, never as device capabilities, until a real
- * non-zero observation teaches us what they mean.
+ * observed so far). Recorded as hidden device capabilities (insights only,
+ * no tile or flow cards) and a dew_debug app setting until a real non-zero
+ * observation teaches us what they mean.
  */
-const DEW_DEBUG_PROPS = ['SystemDewStatus', 'WCDewState'];
+const DEW_DEBUG_CAPABILITIES = {
+  SystemDewStatus: 'salus_dew_system_status',
+  WCDewState: 'salus_dew_wc_state',
+};
+const DEW_DEBUG_PROPS = Object.keys(DEW_DEBUG_CAPABILITIES);
 
 function readProps(device) {
   return device?._shadow_properties || {};
@@ -53,7 +57,31 @@ class SalusWiringCenterDevice extends SalusDeviceBase {
   async onInit() {
     const { email, password } = await this.connectClient();
     this._zoneTitlesSet = {};
+    await this._deleteAppLevelDewLogs();
     await this.startPolling(email, password);
+  }
+
+  /**
+   * Up to 0.3.5 the dew fields were app-level insights, which my.homey.app
+   * lists under the app instead of the device. Their history cannot move to
+   * the capability logs, so they are removed.
+   */
+  async _deleteAppLevelDewLogs() {
+    for (const key of DEW_DEBUG_PROPS) {
+      const logId = `dew_${key.toLowerCase()}_${String(this.getData().id).slice(-6)}`;
+      let log;
+      try {
+        log = await this.homey.insights.getLog(logId);
+      } catch (missing) {
+        continue;
+      }
+      try {
+        await this.homey.insights.deleteLog(log);
+        this.log(`[dew-debug] removed app-level insights log ${logId}`);
+      } catch (error) {
+        this.error(`Failed removing app-level insights log ${logId}`, error);
+      }
+    }
   }
 
   async applyCloudSnapshot(own) {
@@ -107,6 +135,20 @@ class SalusWiringCenterDevice extends SalusDeviceBase {
     }
     if (!Object.keys(values).length) return;
 
+    for (const [key, value] of Object.entries(values)) {
+      const capability = DEW_DEBUG_CAPABILITIES[key];
+      try {
+        if (!this.hasCapability(capability)) {
+          await this.addCapability(capability);
+        }
+        if (this.getCapabilityValue(capability) !== value) {
+          await this.setCapabilityValue(capability, value);
+        }
+      } catch (error) {
+        this.error(`Failed updating ${capability}`, error);
+      }
+    }
+
     // Seed the comparison from the persisted record so app restarts do not
     // re-append an unchanged baseline.
     let previous = this._lastDewValues;
@@ -137,24 +179,6 @@ class SalusWiringCenterDevice extends SalusDeviceBase {
       this.homey.settings.set('dew_debug', all);
     } catch (error) {
       this.error('Failed persisting dew debug setting', error);
-    }
-
-    for (const [key, value] of Object.entries(values)) {
-      try {
-        const logId = `dew_${key.toLowerCase()}_${String(this.getData().id).slice(-6)}`;
-        let log;
-        try {
-          log = await this.homey.insights.getLog(logId);
-        } catch (missing) {
-          log = await this.homey.insights.createLog(logId, {
-            title: { en: `${this.getName()} ${key}` },
-            type: 'number',
-          });
-        }
-        await log.createEntry(value);
-      } catch (error) {
-        this.error('Failed writing dew insights entry', error);
-      }
     }
   }
 }

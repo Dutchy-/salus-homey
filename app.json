@@ -86,6 +86,32 @@
       "insights": true,
       "chartType": "stepLine"
     },
+    "salus_dew_system_status": {
+      "type": "number",
+      "title": {
+        "en": "Dew status (system)",
+        "nl": "Dauwstatus (systeem)"
+      },
+      "getable": true,
+      "setable": false,
+      "decimals": 0,
+      "uiComponent": null,
+      "insights": true,
+      "chartType": "stepLine"
+    },
+    "salus_dew_wc_state": {
+      "type": "number",
+      "title": {
+        "en": "Dew state (wiring centre)",
+        "nl": "Dauwstatus (wiring centre)"
+      },
+      "getable": true,
+      "setable": false,
+      "decimals": 0,
+      "uiComponent": null,
+      "insights": true,
+      "chartType": "stepLine"
+    },
     "salus_hold_mode": {
       "type": "enum",
       "title": {
