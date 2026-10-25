@@ -485,6 +485,15 @@ class SalusSensorDevice extends SalusDeviceBase {
         this.driver.coolingStartedTrigger,
         this.driver.coolingStoppedTrigger,
       );
+      // my.homey.app Insights only lists number logs, so the boolean
+      // salus_heating_active never shows up there; mirror it as 0/1.
+      if (!this.hasCapability('salus_heating_demand')) {
+        await this.addCapability('salus_heating_demand');
+      }
+      const heatingDemand = runningState === 1 ? 1 : 0;
+      if (this.getCapabilityValue('salus_heating_demand') !== heatingDemand) {
+        await this.setCapabilityValue('salus_heating_demand', heatingDemand);
+      }
     }
 
     await this.applyTargetTemperatureOptionsFromShadow(own._shadow_properties || {}, targetTemperature);

@@ -70,6 +70,22 @@
         "en": "Heating stopped"
       }
     },
+    "salus_heating_demand": {
+      "type": "number",
+      "title": {
+        "en": "Heat demand",
+        "nl": "Warmtevraag"
+      },
+      "getable": true,
+      "setable": false,
+      "min": 0,
+      "max": 1,
+      "decimals": 0,
+      "uiComponent": null,
+      "icon": "/assets/heating.svg",
+      "insights": true,
+      "chartType": "stepLine"
+    },
     "salus_hold_mode": {
       "type": "enum",
       "title": {
@@ -417,7 +433,8 @@
         "thermostat_mode",
         "salus_hold_mode",
         "salus_heating_active",
-        "salus_cooling_active"
+        "salus_cooling_active",
+        "salus_heating_demand"
       ],
       "energy": {
         "batteries": [
