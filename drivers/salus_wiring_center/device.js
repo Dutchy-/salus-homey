@@ -93,6 +93,7 @@ class SalusWiringCenterDevice extends SalusDeviceBase {
         this.driver.pumpOnTrigger,
         this.driver.pumpOffTrigger,
       );
+      await this._updateNumericMirror('salus_pump_state', pump);
     }
 
     const boiler = readOutput(own, 'BoilerOutput');
@@ -103,6 +104,7 @@ class SalusWiringCenterDevice extends SalusDeviceBase {
         this.driver.boilerOnTrigger,
         this.driver.boilerOffTrigger,
       );
+      await this._updateNumericMirror('salus_boiler_state', boiler);
     }
 
     for (const zone of readBoundZones(own)) {
@@ -120,6 +122,16 @@ class SalusWiringCenterDevice extends SalusDeviceBase {
       if (isNew && !this._zoneTitlesSet[capability]) {
         this._zoneTitlesSet[capability] = true;
         await this.setCapabilityOptions(capability, { title: { en: `Zone ${zone}` } }).catch(this.error);
+      }
+
+      const mirror = `salus_zone_state.zone${zone}`;
+      const isNewMirror = !this.hasCapability(mirror);
+      await this._updateNumericMirror(mirror, active);
+      if (isNewMirror && !this._zoneTitlesSet[mirror]) {
+        this._zoneTitlesSet[mirror] = true;
+        await this.setCapabilityOptions(mirror, {
+          title: { en: `Zone ${zone} open`, nl: `Zone ${zone} open` },
+        }).catch(this.error);
       }
     }
 

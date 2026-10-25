@@ -86,6 +86,54 @@
       "insights": true,
       "chartType": "stepLine"
     },
+    "salus_pump_state": {
+      "type": "number",
+      "title": {
+        "en": "Pump running",
+        "nl": "Pomp aan"
+      },
+      "getable": true,
+      "setable": false,
+      "min": 0,
+      "max": 1,
+      "decimals": 0,
+      "uiComponent": null,
+      "icon": "/assets/pump.svg",
+      "insights": true,
+      "chartType": "stepLine"
+    },
+    "salus_boiler_state": {
+      "type": "number",
+      "title": {
+        "en": "Boiler demand",
+        "nl": "Ketelvraag"
+      },
+      "getable": true,
+      "setable": false,
+      "min": 0,
+      "max": 1,
+      "decimals": 0,
+      "uiComponent": null,
+      "icon": "/assets/heating.svg",
+      "insights": true,
+      "chartType": "stepLine"
+    },
+    "salus_zone_state": {
+      "type": "number",
+      "title": {
+        "en": "Zone open",
+        "nl": "Zone open"
+      },
+      "getable": true,
+      "setable": false,
+      "min": 0,
+      "max": 1,
+      "decimals": 0,
+      "uiComponent": null,
+      "icon": "/assets/zone.svg",
+      "insights": true,
+      "chartType": "stepLine"
+    },
     "salus_dew_system_status": {
       "type": "number",
       "title": {
@@ -704,7 +752,9 @@
       ],
       "capabilities": [
         "salus_pump_output",
-        "salus_boiler_output"
+        "salus_boiler_output",
+        "salus_pump_state",
+        "salus_boiler_state"
       ],
       "images": {
         "small": "/drivers/salus_wiring_center/assets/images/small.png",
